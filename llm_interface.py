@@ -13,6 +13,15 @@ class LLMInterface:
         response = self._call_llm(prompt)
         return self._parse_response(response)
 
+    def query_json(self, prompt: str) -> Dict[str, Any]:
+        response = self._call_llm(prompt)
+        try:
+            return json.loads(response)
+        except json.JSONDecodeError:
+            print("Error: Unable to parse LLM response")
+            print("Raw response:", response)
+            return {"error": "Unable to parse LLM response."}
+
     def _construct_prompt(self, command: str, args: list, game_state_dict: Dict[str, Any]) -> str:
         game_state_json = json.dumps(game_state_dict, indent=2)
         custom_commands = game_state_dict.get("custom_commands", {})

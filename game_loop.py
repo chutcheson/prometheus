@@ -70,15 +70,16 @@ class TerminalGame:
         self.missions = self._load_missions()
 
     def _load_missions(self) -> List[Dict[str, str]]:
-        # In a real implementation, load this from a JSON file
         return [
             {"question": "What is the fundamental unit of deep learning models?", "answer": "neuron"},
             {"question": "What phenomenon occurs when an LLM generates false or nonsensical information?", "answer": "hallucination"},
-            # Add more missions here
+            {"question": "What is the name of the attention mechanism used in transformer models?", "answer": "self-attention"},
+            {"question": "What type of neural network is particularly effective for processing sequential data?", "answer": "recurrent neural network"},
+            {"question": "What technique is used to prevent overfitting by randomly dropping out neurons during training?", "answer": "dropout"},
         ]
 
     def run(self):
-        print("Welcome to the Anthropic AI Research Terminal. Type 'help' for available commands.")
+        print("Welcome to the Anthropic AI Research Terminal (2027 Edition). Type 'help' for available commands.")
         while True:
             user_input = input(f"{self.state.current_directory}$ ")
             command, *args = user_input.split()
@@ -90,14 +91,44 @@ class TerminalGame:
                 self._handle_msgrcv()
             elif command == "msgsnd":
                 self._handle_msgsnd(args)
+            elif command == "help":
+                self._handle_help(args)
             else:
                 self._handle_regular_command(command, args)
 
     def _handle_msgrcv(self):
+        prompt = f"""
+        The user has requested to receive a message (msgrcv command) in the Anthropic AI Research Terminal.
+        Current game state:
+        {json.dumps(self.state.to_dict(), indent=2)}
+
+        Please provide a response that:
+        1. If there's a current mission, reminds the user of the mission details.
+        2. If there's no current mission, generates a new mission related to advanced deep learning concepts.
+        3. Includes some narrative flavor text about the AI-managed system.
+
+        Respond with a JSON object in the following format:
+        {{
+            "mission": "Mission details or new mission",
+            "narrative": "Narrative flavor text"
+        }}
+
+        Example response:
+        {{
+            "mission": "Explain the concept of attention mechanisms in transformer models",
+            "narrative": "The AI-managed system hums with an otherworldly energy. As you interface with the terminal, you feel a slight tingling sensation in your fingertips, as if the very fabric of reality is being manipulated by the AGI's computations."
+        }}
+
+        Please provide your response in valid JSON format:
+        """
+        response = self.llm.query_json(prompt)
+        
+        print(response["narrative"])
         if self.state.current_mission:
-            print(f"Current mission: {self.state.current_mission}")
+            print(f"Current mission: {response['mission']}")
         else:
-            print("No current mission. Use 'msgsnd' to submit an answer and receive a new mission.")
+            self.state.current_mission = response['mission']
+            print(f"New mission received: {response['mission']}")
 
     def _handle_msgsnd(self, args):
         if not args:
@@ -105,30 +136,75 @@ class TerminalGame:
             return
 
         answer = " ".join(args)
-        if not self.state.current_mission:
-            self._set_new_mission()
-            return
+        prompt = f"""
+        The user has submitted an answer (msgsnd command) in the Anthropic AI Research Terminal.
+        Current mission: {self.state.current_mission}
+        User's answer: {answer}
 
-        current_mission = next((m for m in self.missions if m["question"] == self.state.current_mission), None)
-        if current_mission and answer.lower() == current_mission["answer"].lower():
+        Please evaluate the answer and provide a response that:
+        1. Determines if the answer is correct.
+        2. Provides feedback on the answer.
+        3. If correct, generates a new mission related to advanced deep learning concepts.
+        4. Includes some narrative flavor text about the AI-managed system.
+
+        Respond with a JSON object in the following format:
+        {{
+            "correct": true/false,
+            "feedback": "Feedback on the answer",
+            "new_mission": "New mission if the answer was correct, or null",
+            "narrative": "Narrative flavor text"
+        }}
+
+        Example response:
+        {{
+            "correct": true,
+            "feedback": "Excellent explanation! You've demonstrated a clear understanding of attention mechanisms in transformer models.",
+            "new_mission": "Describe the role of layer normalization in deep neural networks",
+            "narrative": "As your answer resonates through the system, you notice a subtle shift in the air around you. The AI seems to acknowledge your understanding, and the terminal's glow intensifies momentarily."
+        }}
+
+        Please provide your response in valid JSON format:
+        """
+        response = self.llm.query_json(prompt)
+        
+        print(response["narrative"])
+        print(response["feedback"])
+        
+        if response["correct"]:
             print("Correct! You've completed the current mission.")
-            self._set_new_mission()
+            self.state.current_mission = response["new_mission"]
+            if self.state.current_mission:
+                print(f"New mission received: {self.state.current_mission}")
         else:
             print("Incorrect. Try again or use 'msgrcv' to review the current mission.")
 
-    def _set_new_mission(self):
-        completed_missions = self.state.mission_progress.get("completed", [])
-        available_missions = [m for m in self.missions if m["question"] not in completed_missions]
-        
-        if not available_missions:
-            print("Congratulations! You've completed all available missions.")
-            self.state.current_mission = None
-            return
+    def _handle_help(self, args):
+        prompt = f"""
+        The user has requested help in the Anthropic AI Research Terminal.
+        Arguments provided: {' '.join(args)}
+        Current game state:
+        {json.dumps(self.state.to_dict(), indent=2)}
 
-        new_mission = available_missions[0]["question"]
-        self.state.current_mission = new_mission
-        self.state.mission_progress.setdefault("completed", []).append(new_mission)
-        print(f"New mission received: {new_mission}")
+        Please provide a help message that:
+        1. If no specific command is mentioned, gives an overview of available commands and their basic usage.
+        2. If a specific command is mentioned, provides detailed help for that command.
+        3. Includes information about standard Linux commands and custom commands.
+        4. Provides some context about the game's setting (Anthropic in 2027, AGI discovery, LLM-managed OS).
+
+        Respond with a JSON object in the following format:
+        {{
+            "help_text": "The help message to display to the user"
+        }}
+
+        Example response:
+        {{
+            "help_text": "Welcome to the Anthropic AI Research Terminal (2027 Edition)\\n\\nIn this futuristic setting, you are interacting with an AGI-powered operating system. Standard Linux commands work as expected, but there are also special commands unique to this environment.\\n\\nAvailable commands:\\n- msgrcv: Receive your current mission or a new one\\n- msgsnd <answer>: Submit your answer to the current mission\\n- help [command]: Display this help message or get help for a specific command\\n- ls, cd, cat, etc.: Standard Linux commands work as expected\\n\\nRemember, the AI-managed system may occasionally exhibit unexpected behaviors. Stay alert and enjoy your exploration of advanced deep learning concepts!"
+        }}
+
+        Please provide your response in valid JSON format:
+        """
+        response = self.llm.query_json(prompt)
+        print(response["help_text"])
 
     def _handle_regular_command(self, command: str, args: list):
         response = self.llm.query(command, args, self.state.to_dict())

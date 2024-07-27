@@ -2,3 +2,4 @@
 
 # ignore the output of the concat.sh script
 concat.sh
+claude_files.txt
