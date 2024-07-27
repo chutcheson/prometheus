@@ -1,5 +1,3 @@
-# llm_interface.py
-
 import json
 from typing import Dict, Any
 from openai import OpenAI
@@ -33,8 +31,8 @@ Current game state:
 
 The user has entered the command: {command} {' '.join(args)}
 
-+Custom commands defined so far:
-+{json.dumps(custom_commands, indent=2)}
+Custom commands defined so far:
+{json.dumps(custom_commands, indent=2)}
 
 Please provide a response that adheres to the following guidelines:
 
@@ -58,9 +56,15 @@ Please provide a response that adheres to the following guidelines:
 5. Update the game state as necessary:
    - Modify the file system, environment variables, or narrative elements based on the command's effects.
 
+6. Separate narrative and terminal outputs:
+   - Provide a narrative response that describes any relevant events or observations.
+   - Provide the terminal output separately.
+
 Respond in the following JSON format:
 {{
-    "output": "Text to display to the user (command output or error message)",
+    "narrative_output": "Narrative description of events or observations",
+    "terminal_output": "Text to display as terminal output (command result or error message)",
+    "is_error": true/false,
     "file_system_changes": [
         {{"path": "/example/file.txt", "content": "New or updated file content"}}
     ],
@@ -87,7 +91,9 @@ Remember to balance realism with the unique aspects of the game world. Standard 
         try:
             parsed = json.loads(response)
             return {
-                "output": parsed.get("output", ""),
+                "narrative_output": parsed.get("narrative_output", ""),
+                "terminal_output": parsed.get("terminal_output", ""),
+                "is_error": parsed.get("is_error", False),
                 "file_system_changes": parsed.get("file_system_changes", []),
                 "narrative_update": parsed.get("narrative_update", ""),
                 "mission_update": parsed.get("mission_update", ""),
@@ -98,4 +104,8 @@ Remember to balance realism with the unique aspects of the game world. Standard 
         except json.JSONDecodeError:
             print("Error: Unable to parse LLM response")  # Log parsing errors
             print("Raw response:", response)  # Log the raw response
-            return {"output": "Error: Unable to parse LLM response."}
+            return {
+                "narrative_output": "An error occurred in the AI system.",
+                "terminal_output": "Error: Unable to parse LLM response.",
+                "is_error": True
+            }

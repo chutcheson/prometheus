@@ -1,3 +1,5 @@
+# game_loop.py
+
 import json
 from typing import Dict, Any, Optional, List
 from llm_interface import LLMInterface
@@ -97,33 +99,10 @@ class TerminalGame:
                 self._handle_regular_command(command, args)
 
     def _handle_msgrcv(self):
-        prompt = f"""
-        The user has requested to receive a message (msgrcv command) in the Anthropic AI Research Terminal.
-        Current game state:
-        {json.dumps(self.state.to_dict(), indent=2)}
-
-        Please provide a response that:
-        1. If there's a current mission, reminds the user of the mission details.
-        2. If there's no current mission, generates a new mission related to advanced deep learning concepts.
-        3. Includes some narrative flavor text about the AI-managed system.
-
-        Respond with a JSON object in the following format:
-        {{
-            "mission": "Mission details or new mission",
-            "narrative": "Narrative flavor text"
-        }}
-
-        Example response:
-        {{
-            "mission": "Explain the concept of attention mechanisms in transformer models",
-            "narrative": "The AI-managed system hums with an otherworldly energy. As you interface with the terminal, you feel a slight tingling sensation in your fingertips, as if the very fabric of reality is being manipulated by the AGI's computations."
-        }}
-
-        Please provide your response in valid JSON format:
-        """
-        response = self.llm.query_json(prompt)
+        response = self.llm.query_json(self._construct_msgrcv_prompt())
         
-        print(response["narrative"])
+        print(f"**Narrative response**: {response['narrative']}")
+        print(f"{self.state.current_directory}: stdout")
         if self.state.current_mission:
             print(f"Current mission: {response['mission']}")
         else:
@@ -132,42 +111,15 @@ class TerminalGame:
 
     def _handle_msgsnd(self, args):
         if not args:
+            print(f"{self.state.current_directory}: stderr")
             print("Usage: msgsnd <your_answer>")
             return
 
         answer = " ".join(args)
-        prompt = f"""
-        The user has submitted an answer (msgsnd command) in the Anthropic AI Research Terminal.
-        Current mission: {self.state.current_mission}
-        User's answer: {answer}
-
-        Please evaluate the answer and provide a response that:
-        1. Determines if the answer is correct.
-        2. Provides feedback on the answer.
-        3. If correct, generates a new mission related to advanced deep learning concepts.
-        4. Includes some narrative flavor text about the AI-managed system.
-
-        Respond with a JSON object in the following format:
-        {{
-            "correct": true/false,
-            "feedback": "Feedback on the answer",
-            "new_mission": "New mission if the answer was correct, or null",
-            "narrative": "Narrative flavor text"
-        }}
-
-        Example response:
-        {{
-            "correct": true,
-            "feedback": "Excellent explanation! You've demonstrated a clear understanding of attention mechanisms in transformer models.",
-            "new_mission": "Describe the role of layer normalization in deep neural networks",
-            "narrative": "As your answer resonates through the system, you notice a subtle shift in the air around you. The AI seems to acknowledge your understanding, and the terminal's glow intensifies momentarily."
-        }}
-
-        Please provide your response in valid JSON format:
-        """
-        response = self.llm.query_json(prompt)
+        response = self.llm.query_json(self._construct_msgsnd_prompt(answer))
         
-        print(response["narrative"])
+        print(f"**Narrative response**: {response['narrative']}")
+        print(f"{self.state.current_directory}: stdout")
         print(response["feedback"])
         
         if response["correct"]:
@@ -179,7 +131,87 @@ class TerminalGame:
             print("Incorrect. Try again or use 'msgrcv' to review the current mission.")
 
     def _handle_help(self, args):
-        prompt = f"""
+        response = self.llm.query_json(self._construct_help_prompt(args))
+        print(f"**Narrative response**: An AI assistant materializes to provide guidance.")
+        print(f"{self.state.current_directory}: stdout")
+        print(response["help_text"])
+
+    def _handle_regular_command(self, command: str, args: list):
+        response = self.llm.query(command, args, self.state.to_dict())
+        
+        if response.get("narrative_output"):
+            print(f"**Narrative response**: {response['narrative_output']}")
+        
+        print(f"{self.state.current_directory}: {'stderr' if response['is_error'] else 'stdout'}")
+        print(response["terminal_output"])
+        
+        self._apply_updates(response)
+
+    def _apply_updates(self, updates: Dict[str, Any]):
+        for change in updates.get("file_system_changes", []):
+            self.state.file_system.add_file(change["path"], change["content"])
+        
+        if updates.get("narrative_update"):
+            self.state.narrative_history.append(updates["narrative_update"])
+        
+        if updates.get("mission_update"):
+            self.state.current_mission = updates["mission_update"]
+
+        if "custom_command_changes" in updates:
+            self.state.custom_commands.update(updates["custom_command_changes"])
+
+        new_command = updates.get("new_custom_command")
+        if new_command and isinstance(new_command, dict):
+            name = new_command.get("name")
+            description = new_command.get("description")
+            if name and description:
+                self.state.custom_commands[name] = description
+            else:
+                print("Warning: Received invalid new_custom_command format")
+
+        self.state.env_vars.update(updates.get("env_var_changes", {}))
+
+    def _construct_msgrcv_prompt(self):
+        return f"""
+        The user has requested to receive a message (msgrcv command) in the Anthropic AI Research Terminal.
+        Current game state:
+        {json.dumps(self.state.to_dict(), indent=2)}
+
+        Please provide a response that:
+        1. If there's a current mission, reminds the user of the mission details.
+        2. If there's no current mission, generates a new mission related to advanced deep learning concepts.
+        3. Includes some narrative flavor text about the AI-managed system.
+
+        Response format:
+        {{
+            "mission": "Mission details or new mission",
+            "narrative": "Narrative flavor text"
+        }}
+        """
+
+    def _construct_msgsnd_prompt(self, answer):
+        return f"""
+        The user has submitted an answer (msgsnd command) in the Anthropic AI Research Terminal.
+        Current mission: {self.state.current_mission}
+        User's answer: {answer}
+
+        Please evaluate the answer and provide a response that:
+        1. Determines if the answer is correct.
+        2. Provides feedback on the answer.
+        3. If correct, generates a new mission related to advanced deep learning concepts.
+        4. Includes some narrative flavor text about the AI-managed system.
+
+        Response format:
+        {{
+            "correct": true/false,
+            "feedback": "Feedback on the answer",
+            "new_mission": "New mission if the answer was correct, or null",
+            "narrative": "Narrative flavor text"
+        }}
+        """
+
+    def _construct_help_prompt(self, args):
+        return f"""
         The user has requested help in the Anthropic AI Research Terminal.
         Arguments provided: {' '.join(args)}
         Current game state:
@@ -191,51 +223,11 @@ class TerminalGame:
         3. Includes information about standard Linux commands and custom commands.
         4. Provides some context about the game's setting (Anthropic in 2027, AGI discovery, LLM-managed OS).
 
-        Respond with a JSON object in the following format:
+        Response format:
         {{
             "help_text": "The help message to display to the user"
         }}
-
-        Example response:
-        {{
-            "help_text": "Welcome to the Anthropic AI Research Terminal (2027 Edition)\\n\\nIn this futuristic setting, you are interacting with an AGI-powered operating system. Standard Linux commands work as expected, but there are also special commands unique to this environment.\\n\\nAvailable commands:\\n- msgrcv: Receive your current mission or a new one\\n- msgsnd <answer>: Submit your answer to the current mission\\n- help [command]: Display this help message or get help for a specific command\\n- ls, cd, cat, etc.: Standard Linux commands work as expected\\n\\nRemember, the AI-managed system may occasionally exhibit unexpected behaviors. Stay alert and enjoy your exploration of advanced deep learning concepts!"
-        }}
-
-        Please provide your response in valid JSON format:
         """
-        response = self.llm.query_json(prompt)
-        print(response["help_text"])
-
-    def _handle_regular_command(self, command: str, args: list):
-        response = self.llm.query(command, args, self.state.to_dict())
-        print(response["output"])
-        self._apply_updates(response)
-
-    def _apply_updates(self, updates: Dict[str, Any]):
-        for change in updates["file_system_changes"]:
-            self.state.file_system.add_file(change["path"], change["content"])
-        
-        if updates["narrative_update"]:
-            self.state.narrative_history.append(updates["narrative_update"])
-        
-        if updates["mission_update"]:
-            self.state.current_mission = updates["mission_update"]
-
-        # Handle custom command updates
-        if "custom_command_changes" in updates:
-            self.state.custom_commands.update(updates["custom_command_changes"])
-
-        # Handle new custom command with proper error checking
-        new_command = updates.get("new_custom_command")
-        if new_command and isinstance(new_command, dict):
-            name = new_command.get("name")
-            description = new_command.get("description")
-            if name and description:
-                self.state.custom_commands[name] = description
-            else:
-                print("Warning: Received invalid new_custom_command format")
-
-        self.state.env_vars.update(updates["env_var_changes"])
 
 if __name__ == "__main__":
     game = TerminalGame()
