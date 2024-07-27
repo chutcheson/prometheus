@@ -1,0 +1,4 @@
+# this is a gitignore file
+
+# ignore the output of the concat.sh script
+concat.sh
