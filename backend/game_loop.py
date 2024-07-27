@@ -325,6 +325,8 @@ class TerminalGame:
             return self._handle_msgsnd(args)
         elif command == "help":
             return self._handle_help(args)
+        elif command == "assistant":
+            return self._handle_assistant()
         elif command == "clear":
             return self._handle_clear()
         else:
@@ -373,6 +375,15 @@ class TerminalGame:
         return {
             "narrative_output": "An AI assistant materializes to provide guidance.",
             "terminal_output": response.get('help_text', 'No help available at the moment.'),
+            "current_directory": self.state.current_directory
+        }
+
+    def _handle_assistant(self):
+        response = self.llm.query_json(self._construct_assistant_prompt())
+        
+        return {
+            "narrative_output": "The AI assistant ponders for a moment, then provides a cryptic response:",
+            "terminal_output": response.get('quote', 'The assistant remains silent.'),
             "current_directory": self.state.current_directory
         }
 
@@ -478,6 +489,26 @@ class TerminalGame:
         Respond in JSON. Response format:
         {{
             "help_text": "The help message to display to the user"
+        }}
+        """
+
+    def _construct_assistant_prompt(self):
+        return f"""
+        This is an educational game aimed at advanced undergraduate and graduate students to learn about what it means to work at a research lab and to help teach them advanced programming and deep learning techniques. It is also meant to help them think about how AGI might change the world. We plan to use this as an ongoing training course at a lab. You are emulating a terminal in an Anthropic research facility in 2027 after the discovery of AGI. You are controlling the game state and creating the environment for the player. The environment should be detailed and beautiful and interesting but it should be extremely realistic based on the latest research and discoveries. The main goal is to provide an advanced programmer and deep learning student a safe place to explore the dynamics at a top research lab and this includes the social, financial and technical aspects of research. The player should be able to interact with the environment.      
+
+        You are an AI assistant in the Anthropic AI Research Terminal game. The user has requested a hint for their current mission. Your task is to provide a cryptic, zen-style quote that subtly hints at the solution or next step for the current mission. The quote should be thought-provoking and not too obvious.
+
+        Current game state:
+        {json.dumps(self.state.to_dict(), indent=2)}
+
+        Please provide a response that:
+        1. Relates to the current mission or game state.
+        2. Is phrased as a cryptic, zen-style quote.
+        3. Offers a subtle hint without giving away the solution.
+
+        Respond in JSON. Response format:
+        {{
+            "quote": "Your cryptic, zen-style quote here"
         }}
         """
 

@@ -1,3 +1,4 @@
+
 const output = document.getElementById('output');
 const input = document.getElementById('command-input');
 const prompt = document.getElementById('prompt');
@@ -31,7 +32,7 @@ async function executeCommand(command) {
             clearTerminal();
         } else {
             if (data.narrative_output) {
-                appendToNarrative(`${data.narrative_output}\n`);
+                updateNarrative(data.narrative_output);
             }
             
             if (data.terminal_output) {
@@ -55,10 +56,8 @@ function appendToOutput(text, className = '') {
     output.scrollTop = output.scrollHeight;
 }
 
-function appendToNarrative(text) {
-    const p = document.createElement('p');
-    p.textContent = text;
-    narrative.appendChild(p);
+function updateNarrative(text) {
+    narrative.textContent = text;
     narrative.scrollTop = narrative.scrollHeight;
 }
 
