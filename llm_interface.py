@@ -8,13 +8,13 @@ class LLMInterface:
     def __init__(self):
         self.client = OpenAI()
 
-    def query(self, command: str, args: list, game_state: Dict[str, Any]) -> Dict[str, Any]:
-        prompt = self._construct_prompt(command, args, game_state)
+    def query(self, command: str, args: list, game_state_dict: Dict[str, Any]) -> Dict[str, Any]:
+        prompt = self._construct_prompt(command, args, game_state_dict)
         response = self._call_llm(prompt)
         return self._parse_response(response)
 
-    def _construct_prompt(self, command: str, args: list, game_state: Dict[str, Any]) -> str:
-        game_state_json = json.dumps(game_state, indent=2)
+    def _construct_prompt(self, command: str, args: list, game_state_dict: Dict[str, Any]) -> str:
+        game_state_json = json.dumps(game_state_dict, indent=2)
         prompt = f"""You are an AI assistant managing a terminal in a futuristic Anthropic research facility. The facility's operating system is fully controlled by an advanced language model, which can lead to occasional unexpected behaviors or inconsistencies. Your task is to provide realistic and engaging responses to user commands, maintain the game state, and progress the narrative.
 
 Current game state:
@@ -22,15 +22,30 @@ Current game state:
 
 The user has entered the command: {command} {' '.join(args)}
 
-Please provide:
-1. The output to display to the user
-2. Any updates to make to the file system
-3. Any updates to the narrative or mission
-4. Any changes to environment variables
+Please provide a response that adheres to the following guidelines:
+
+1. Mimic realistic terminal behavior:
+   - If the command is a standard Unix/Linux command (e.g., ls, cd, cat, echo), behave as a real terminal would.
+   - For standard commands, use proper formatting and typical terminal output styles.
+   - If a command is improperly formatted or used incorrectly, respond with an appropriate error message similar to what a real terminal would provide.
+
+2. Allow for user-invented commands:
+   - If the command is not a standard Unix/Linux command, treat it as a custom command within the game world.
+   - Provide a plausible response that fits the narrative and the AI-controlled OS theme.
+
+3. Maintain narrative consistency:
+   - Ensure your responses align with the existing narrative and game state.
+   - Introduce subtle hints or clues related to deep learning, LLMs, or advanced AI concepts when appropriate.
+   - Occasionally introduce minor glitches or unusual behaviors to reinforce the idea of an AI-controlled OS.
+
+4. Keep responses concise but informative.
+
+5. Update the game state as necessary:
+   - Modify the file system, environment variables, or narrative elements based on the command's effects.
 
 Respond in the following JSON format:
 {{
-    "output": "Text to display to the user",
+    "output": "Text to display to the user (command output or error message)",
     "file_system_changes": [
         {{"path": "/example/file.txt", "content": "New or updated file content"}}
     ],
@@ -39,11 +54,7 @@ Respond in the following JSON format:
     "env_var_changes": {{"VAR_NAME": "New Value"}}
 }}
 
-Remember:
-- Maintain consistency with the existing narrative and file system state.
-- Introduce subtle hints or clues related to deep learning, LLMs, or advanced AI concepts.
-- Occasionally introduce minor glitches or unusual behaviors to reinforce the idea of an AI-controlled OS.
-- Keep responses concise but informative.
+Remember to balance realism with the unique aspects of the game world. Standard commands should behave normally, while custom commands can be more creative and tied to the game's narrative.
 """
         return prompt
 
