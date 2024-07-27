@@ -1,4 +1,4 @@
-# Anthropic AI Research Terminal Simulator
+# Anthropic Research Terminal Simulator
 
 ## Overview
 
