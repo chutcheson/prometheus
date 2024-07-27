@@ -58,7 +58,7 @@ body {
 
 #prompt {
     margin-right: 5px;
-    color: #569cd6;  /* Soft blue for the prompt */
+    color: inherit;
 }
 
 #command-input {

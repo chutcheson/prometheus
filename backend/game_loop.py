@@ -288,7 +288,7 @@ class GameState:
         initialize_filesystem(self.file_system)
         self.current_directory = "/"
         self.env_vars = {}
-        self.current_mission: Optional[str] = None
+        self.current_mission: Optional[str] = "Find the Anthropic API keys used on this machine."
         self.mission_progress: Dict[str, Any] = {}
         self.narrative_history: List[str] = []
         self.custom_commands: Dict[str, str] = {}
@@ -356,8 +356,8 @@ Type 'help' for a list of available commands.\n\n"""
 
         if command == "exit":
             return {"terminal_output": "Thank you for using the Anthropic AI Research Terminal. Goodbye!"}
-        elif command == "cd":
-            return self._handle_cd(args)
+        #elif command == "cd":
+        #    return self._handle_cd(args)
         elif command == "msgrcv":
             return self._handle_msgrcv()
         elif command == "msgsnd":
@@ -509,6 +509,8 @@ Type 'help' for a list of available commands.\n\n"""
     def _construct_msgrcv_prompt(self):
         return f"""
         This is an educational game aimed at advanced undergraduate and graduate students to learn about what it means to work at a research lab and to help teach them advanced programming and deep learning techniques. It is also meant to help them think about how AGI might change the world. We plan to use this as an ongoing training course at a lab. You are emulating a terminal in an Anthropic research facility in 2027 after the discovery of AGI. You are controlling the game state and creating the environment for the player. The environment should be detailed and beautiful and interesting but it should be extremely realistic based on the latest research and discoveries. The main goal is to provide an advanced programmer and deep learning student a safe place to explore the dynamics at a top research lab and this includes the social, financial and technical aspects of research. The player should be able to interact with the environment. 
+
+        Missions should normally consist of finding information on the computer.
 
         The user has requested to receive a message (msgrcv command) in the Anthropic AI Research Terminal.
         Current game state:
