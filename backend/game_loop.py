@@ -292,6 +292,7 @@ class GameState:
         self.mission_progress: Dict[str, Any] = {}
         self.narrative_history: List[str] = []
         self.custom_commands: Dict[str, str] = {}
+        self.initial_message_shown: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -301,7 +302,8 @@ class GameState:
             "current_mission": self.current_mission,
             "mission_progress": self.mission_progress,
             "narrative_history": self.narrative_history[:20],
-            "custom_commands": self.custom_commands
+            "custom_commands": self.custom_commands,
+            "initial_message_shown": self.initial_message_shown
         }
 
 class TerminalGame:
@@ -314,11 +316,41 @@ class TerminalGame:
         return [
         ]
 
+    def _get_initial_message(self) -> str:
+        return """
+        Welcome to Anthropic AI Research Terminal v2.0.27
+        Copyright (c) 2027 Anthropic, Inc. All rights reserved.
+
+        NOTICE: This system is for authorized users only. All activities may be monitored and recorded.
+
+        To begin your first task, type:
+            msgrcv
+
+        Type 'help' for a list of available commands.
+        """
+
     def handle_command(self, user_input: str) -> Dict[str, Any]:
+        if not user_input.strip():
+            if not self.state.initial_message_shown:
+                initial_message = self._get_initial_message()
+                self.state.initial_message_shown = True
+                return {
+                    "narrative_output": "Welcome to the Anthropic AI Research Terminal.",
+                    "terminal_output": initial_message,
+                    "current_directory": self.state.current_directory
+                }
+            else:
+                return {
+                    "terminal_output": "",
+                    "current_directory": self.state.current_directory
+                }
+
         command, *args = user_input.split()
 
         if command == "exit":
             return {"terminal_output": "Thank you for using the Anthropic AI Research Terminal. Goodbye!"}
+        elif command == "cd":
+            return self._handle_cd(args)
         elif command == "msgrcv":
             return self._handle_msgrcv()
         elif command == "msgsnd":
@@ -331,6 +363,44 @@ class TerminalGame:
             return self._handle_clear()
         else:
             return self._handle_regular_command(command, args)
+
+    def _handle_cd(self, args: List[str]) -> Dict[str, Any]:
+        if not args:
+            # 'cd' without arguments should change to home directory
+            new_dir = "/"
+        else:
+            new_dir = args[0]
+
+        # Resolve the new directory path
+        if not new_dir.startswith('/'):
+            new_dir = os.path.normpath(os.path.join(self.state.current_directory, new_dir))
+        else:
+            new_dir = os.path.normpath(new_dir)
+
+        # Check if the new directory exists in our virtual file system
+        if self._directory_exists(new_dir):
+            self.state.current_directory = new_dir
+            return {
+                "terminal_output": "",
+                "current_directory": self.state.current_directory
+            }
+        else:
+            return {
+                "terminal_output": f"cd: {new_dir}: No such file or directory",
+                "current_directory": self.state.current_directory
+            }
+
+    def _directory_exists(self, path: str) -> bool:
+        # Check if the directory exists in our virtual file system
+        current = self.state.file_system.tree["/"]
+        if path == "/":
+            return True
+        for part in path.strip("/").split("/"):
+            if part in current and isinstance(current[part], dict):
+                current = current[part]
+            else:
+                return False
+        return True
 
     def _handle_msgrcv(self):
         response = self.llm.query_json(self._construct_msgrcv_prompt())
@@ -388,6 +458,7 @@ class TerminalGame:
         }
 
     def _handle_clear(self):
+        self.state.initial_message_shown = True  # Ensure the initial message doesn't reappear after clear
         return {
             "clear_screen": True,
             "current_directory": self.state.current_directory

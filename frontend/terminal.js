@@ -1,10 +1,31 @@
-
 const output = document.getElementById('output');
 const input = document.getElementById('command-input');
 const prompt = document.getElementById('prompt');
 const narrative = document.getElementById('narrative');
 const divider = document.getElementById('divider');
 const container = document.getElementById('container');
+
+// Fetch and display initial message when the page loads
+window.addEventListener('load', async () => {
+    try {
+        const response = await fetch('/initial-message');
+        const data = await response.json();
+        
+        if (data.narrative_output) {
+            updateNarrative(data.narrative_output);
+        }
+        
+        if (data.terminal_output) {
+            appendToOutput(data.terminal_output + '\n');
+        }
+        
+        if (data.current_directory) {
+            updatePrompt(data.current_directory);
+        }
+    } catch (error) {
+        appendToOutput(`Error: ${error.message}\n`, 'error');
+    }
+});
 
 input.addEventListener('keypress', function(event) {
     if (event.key === 'Enter') {
@@ -40,9 +61,8 @@ async function executeCommand(command) {
             }
         }
         
-        if (data.current_directory) {
-            updatePrompt(data.current_directory);
-        }
+        // Always update the prompt with the current directory
+        updatePrompt(data.current_directory || '/');
     } catch (error) {
         appendToOutput(`Error: ${error.message}\n`, 'error');
     }
