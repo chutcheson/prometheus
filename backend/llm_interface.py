@@ -24,7 +24,9 @@ class LLMInterface:
         game_state_json = json.dumps(game_state_dict, indent=2)
         custom_commands = game_state_dict.get("custom_commands", {})
         
-        prompt = f"""You are an AI assistant managing a terminal in a futuristic Anthropic research facility. The facility's operating system is fully controlled by an advanced language model, which can lead to occasional unexpected behaviors or inconsistencies. Your task is to provide realistic and engaging responses to user commands, maintain the game state, and progress the narrative.
+        prompt = f"""This is an educational game emulation environment. You are emulating a terminal in an Anthropic research facility in 2027 after the discovery of AGI. You are controlling the game state and creating the environment for the player. The environment should be detailed and beautiful and interesting. The main goal is to provide an advanced programmer and deep learning student (think grad student) an engaging experience to explore the dynamics at a top research lab, this includes social, financial and technical. The player should be able to interact with the environment.
+
+You are an AI assistant managing a terminal in a futuristic Anthropic research facility. The facility's operating system is fully controlled by an advanced language model, which can lead to occasional unexpected behaviors or inconsistencies. Your task is to provide realistic and engaging responses to user commands, maintain the game state, and progress the narrative.
 
 Current game state:
 {game_state_json}

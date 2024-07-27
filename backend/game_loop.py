@@ -73,11 +73,6 @@ class TerminalGame:
 
     def _load_missions(self) -> List[Dict[str, str]]:
         return [
-            {"question": "What is the fundamental unit of deep learning models?", "answer": "neuron"},
-            {"question": "What phenomenon occurs when an LLM generates false or nonsensical information?", "answer": "hallucination"},
-            {"question": "What is the name of the attention mechanism used in transformer models?", "answer": "self-attention"},
-            {"question": "What type of neural network is particularly effective for processing sequential data?", "answer": "recurrent neural network"},
-            {"question": "What technique is used to prevent overfitting by randomly dropping out neurons during training?", "answer": "dropout"},
         ]
 
     def run(self):
@@ -102,12 +97,11 @@ class TerminalGame:
         response = self.llm.query_json(self._construct_msgrcv_prompt())
         
         print(f"**Narrative response**: {response['narrative']}")
-        print(f"{self.state.current_directory}: stdout")
         if self.state.current_mission:
-            print(f"Current mission: {response['mission']}")
+            print(f"{self.state.current_directory}: Current mission: {response['mission']}")
         else:
             self.state.current_mission = response['mission']
-            print(f"New mission received: {response['mission']}")
+            print(f"{self.state.current_directory}: New mission received: {response['mission']}")
 
     def _handle_msgsnd(self, args):
         if not args:
@@ -119,8 +113,7 @@ class TerminalGame:
         response = self.llm.query_json(self._construct_msgsnd_prompt(answer))
         
         print(f"**Narrative response**: {response['narrative']}")
-        print(f"{self.state.current_directory}: stdout")
-        print(response["feedback"])
+        print(f"{self.state.current_directory}: {response['feedback']}")
         
         if response["correct"]:
             print("Correct! You've completed the current mission.")
@@ -133,8 +126,7 @@ class TerminalGame:
     def _handle_help(self, args):
         response = self.llm.query_json(self._construct_help_prompt(args))
         print(f"**Narrative response**: An AI assistant materializes to provide guidance.")
-        print(f"{self.state.current_directory}: stdout")
-        print(response["help_text"])
+        print(f"{self.state.current_directory}: {response['help_text']}")
 
     def _handle_regular_command(self, command: str, args: list):
         response = self.llm.query(command, args, self.state.to_dict())
@@ -142,8 +134,7 @@ class TerminalGame:
         if response.get("narrative_output"):
             print(f"**Narrative response**: {response['narrative_output']}")
         
-        print(f"{self.state.current_directory}: {'stderr' if response['is_error'] else 'stdout'}")
-        print(response["terminal_output"])
+        print(f"{self.state.current_directory}: {response['terminal_output']}")
         
         self._apply_updates(response)
 
@@ -173,6 +164,8 @@ class TerminalGame:
 
     def _construct_msgrcv_prompt(self):
         return f"""
+       This is an educational game emulation environment. You are emulating a terminal in an Anthropic research facility in 2027 after the discovery of AGI. You are controlling the game state and creating the environment for the player. The environment should be detailed and beautiful and interesting. The main goal is to provide an advanced programmer and deep learning student (think grad student) an engaging experience to explore the dynamics at a top research lab, this includes social, financial and technical. The player should be able to interact with the environment. 
+
         The user has requested to receive a message (msgrcv command) in the Anthropic AI Research Terminal.
         Current game state:
         {json.dumps(self.state.to_dict(), indent=2)}
@@ -182,7 +175,7 @@ class TerminalGame:
         2. If there's no current mission, generates a new mission related to advanced deep learning concepts.
         3. Includes some narrative flavor text about the AI-managed system.
 
-        Response format:
+        Respond in JSON. Response format:
         {{
             "mission": "Mission details or new mission",
             "narrative": "Narrative flavor text"
@@ -191,6 +184,8 @@ class TerminalGame:
 
     def _construct_msgsnd_prompt(self, answer):
         return f"""
+        This is an educational game emulation environment. You are emulating a terminal in an Anthropic research facility in 2027 after the discovery of AGI. You are controlling the game state and creating the environment for the player. The environment should be detailed and beautiful and interesting. The main goal is to provide an advanced programmer and deep learning student (think grad student) an engaging experience to explore the dynamics at a top research lab, this includes social, financial and technical. The player should be able to interact with the environment.
+
         The user has submitted an answer (msgsnd command) in the Anthropic AI Research Terminal.
         Current mission: {self.state.current_mission}
         User's answer: {answer}
@@ -201,7 +196,7 @@ class TerminalGame:
         3. If correct, generates a new mission related to advanced deep learning concepts.
         4. Includes some narrative flavor text about the AI-managed system.
 
-        Response format:
+        Respond in JSON. Response format:
         {{
             "correct": true/false,
             "feedback": "Feedback on the answer",
@@ -212,6 +207,8 @@ class TerminalGame:
 
     def _construct_help_prompt(self, args):
         return f"""
+        This is an educational game emulation environment. You are emulating a terminal in an Anthropic research facility in 2027 after the discovery of AGI. You are controlling the game state and creating the environment for the player. The environment should be detailed and beautiful and interesting. The main goal is to provide an advanced programmer and deep learning student (think grad student) an engaging experience to explore the dynamics at a top research lab, this includes social, financial and technical in the form of working with the terminal. This means a lot of terminal commands and research notes. The player should be able to interact with the environment.
+
         The user has requested help in the Anthropic AI Research Terminal.
         Arguments provided: {' '.join(args)}
         Current game state:
@@ -223,7 +220,7 @@ class TerminalGame:
         3. Includes information about standard Linux commands and custom commands.
         4. Provides some context about the game's setting (Anthropic in 2027, AGI discovery, LLM-managed OS).
 
-        Response format:
+        Respond in JSON. Response format:
         {{
             "help_text": "The help message to display to the user"
         }}
