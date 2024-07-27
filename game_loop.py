@@ -50,6 +50,7 @@ class GameState:
         self.current_mission: Optional[str] = None
         self.mission_progress: Dict[str, Any] = {}
         self.narrative_history: List[str] = []
+        self.custom_commands: Dict[str, str] = {}
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -58,7 +59,8 @@ class GameState:
             "env_vars": self.env_vars,
             "current_mission": self.current_mission,
             "mission_progress": self.mission_progress,
-            "narrative_history": self.narrative_history[-5:]  # Last 5 narrative events
+            "narrative_history": self.narrative_history[-5:],  # Last 5 narrative events
+            "custom_commands": self.custom_commands
         }
 
 class TerminalGame:
@@ -142,7 +144,21 @@ class TerminalGame:
         
         if updates["mission_update"]:
             self.state.current_mission = updates["mission_update"]
-        
+
+        # Handle custom command updates
+        if "custom_command_changes" in updates:
+            self.state.custom_commands.update(updates["custom_command_changes"])
+
+        # Handle new custom command with proper error checking
+        new_command = updates.get("new_custom_command")
+        if new_command and isinstance(new_command, dict):
+            name = new_command.get("name")
+            description = new_command.get("description")
+            if name and description:
+                self.state.custom_commands[name] = description
+            else:
+                print("Warning: Received invalid new_custom_command format")
+
         self.state.env_vars.update(updates["env_var_changes"])
 
 if __name__ == "__main__":
