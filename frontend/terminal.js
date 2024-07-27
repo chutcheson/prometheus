@@ -1,6 +1,9 @@
 const output = document.getElementById('output');
 const input = document.getElementById('command-input');
 const prompt = document.getElementById('prompt');
+const narrative = document.getElementById('narrative');
+const divider = document.getElementById('divider');
+const container = document.getElementById('container');
 
 input.addEventListener('keypress', function(event) {
     if (event.key === 'Enter') {
@@ -24,15 +27,21 @@ async function executeCommand(command) {
         
         const data = await response.json();
         
-        if (data.narrative_output) {
-            appendToOutput(`${data.narrative_output}\n`, 'narrative');
+        if (data.clear_screen) {
+            clearTerminal();
+        } else {
+            if (data.narrative_output) {
+                appendToNarrative(`${data.narrative_output}\n`);
+            }
+            
+            if (data.terminal_output) {
+                appendToOutput(`${data.terminal_output}\n`);
+            }
         }
         
-        if (data.terminal_output) {
-            appendToOutput(`${data.terminal_output}\n`);
+        if (data.current_directory) {
+            updatePrompt(data.current_directory);
         }
-        
-        updatePrompt(data.current_directory);
     } catch (error) {
         appendToOutput(`Error: ${error.message}\n`, 'error');
     }
@@ -46,6 +55,47 @@ function appendToOutput(text, className = '') {
     output.scrollTop = output.scrollHeight;
 }
 
+function appendToNarrative(text) {
+    const p = document.createElement('p');
+    p.textContent = text;
+    narrative.appendChild(p);
+    narrative.scrollTop = narrative.scrollHeight;
+}
+
 function updatePrompt(directory) {
     prompt.textContent = `${directory}$`;
 }
+
+function clearTerminal() {
+    output.innerHTML = '';
+}
+
+// Divider functionality
+let isResizing = false;
+let lastDownX = 0;
+
+divider.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    lastDownX = e.clientX;
+});
+
+document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+
+    const offsetX = e.clientX - lastDownX;
+    const terminalSide = document.getElementById('terminal-side');
+    const narrativeSide = document.getElementById('narrative-side');
+
+    const newTerminalWidth = terminalSide.offsetWidth + offsetX;
+    const newNarrativeWidth = narrativeSide.offsetWidth - offsetX;
+
+    if (newTerminalWidth > 200 && newNarrativeWidth > 200) {
+        terminalSide.style.flex = `0 0 ${newTerminalWidth}px`;
+        narrativeSide.style.flex = `0 0 ${newNarrativeWidth}px`;
+        lastDownX = e.clientX;
+    }
+});
+
+document.addEventListener('mouseup', () => {
+    isResizing = false;
+});

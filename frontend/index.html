@@ -7,11 +7,19 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="terminal">
-        <div id="output"></div>
-        <div id="input-line">
-            <span id="prompt">$</span>
-            <input type="text" id="command-input" autofocus>
+    <div id="container">
+        <div id="terminal-side">
+            <div id="terminal">
+                <div id="output"></div>
+                <div id="input-line">
+                    <span id="prompt">$</span>
+                    <input type="text" id="command-input" autofocus>
+                </div>
+            </div>
+        </div>
+        <div id="divider"></div>
+        <div id="narrative-side">
+            <div id="narrative"></div>
         </div>
     </div>
     <script src="terminal.js"></script>

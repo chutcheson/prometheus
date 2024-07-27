@@ -86,43 +86,62 @@ class TerminalGame:
             return self._handle_msgsnd(args)
         elif command == "help":
             return self._handle_help(args)
+        elif command == "clear":
+            return self._handle_clear()
         else:
             return self._handle_regular_command(command, args)
 
     def _handle_msgrcv(self):
         response = self.llm.query_json(self._construct_msgrcv_prompt())
         
-        print(f"**Narrative response**: {response['narrative']}")
-        if self.state.current_mission:
-            print(f"{self.state.current_directory}: Current mission: {response['mission']}")
-        else:
-            self.state.current_mission = response['mission']
-            print(f"{self.state.current_directory}: New mission received: {response['mission']}")
+        return {
+            "narrative_output": response.get('narrative', ''),
+            "terminal_output": f"Current mission: {response.get('mission', 'No mission available')}",
+            "current_directory": self.state.current_directory
+        }
 
     def _handle_msgsnd(self, args):
         if not args:
-            print(f"{self.state.current_directory}: stderr")
-            print("Usage: msgsnd <your_answer>")
-            return
+            return {
+                "narrative_output": "You attempt to send a message, but realize you haven't composed anything yet.",
+                "terminal_output": "Usage: msgsnd <your_answer>",
+                "current_directory": self.state.current_directory
+            }
 
         answer = " ".join(args)
         response = self.llm.query_json(self._construct_msgsnd_prompt(answer))
         
-        print(f"**Narrative response**: {response['narrative']}")
-        print(f"{self.state.current_directory}: {response['feedback']}")
+        narrative = response.get('narrative', '')
+        feedback = response.get('feedback', '')
         
-        if response["correct"]:
-            print("Correct! You've completed the current mission.")
-            self.state.current_mission = response["new_mission"]
+        if response.get("correct", False):
+            narrative += "\nCorrect! You've completed the current mission."
+            self.state.current_mission = response.get("new_mission")
             if self.state.current_mission:
-                print(f"New mission received: {self.state.current_mission}")
+                feedback += f"\nNew mission received: {self.state.current_mission}"
         else:
-            print("Incorrect. Try again or use 'msgrcv' to review the current mission.")
+            feedback += "\nIncorrect. Try again or use 'msgrcv' to review the current mission."
+
+        return {
+            "narrative_output": narrative,
+            "terminal_output": feedback,
+            "current_directory": self.state.current_directory
+        }
 
     def _handle_help(self, args):
         response = self.llm.query_json(self._construct_help_prompt(args))
-        print(f"**Narrative response**: An AI assistant materializes to provide guidance.")
-        print(f"{self.state.current_directory}: {response['help_text']}")
+        
+        return {
+            "narrative_output": "An AI assistant materializes to provide guidance.",
+            "terminal_output": response.get('help_text', 'No help available at the moment.'),
+            "current_directory": self.state.current_directory
+        }
+
+    def _handle_clear(self):
+        return {
+            "clear_screen": True,
+            "current_directory": self.state.current_directory
+        }
 
     def _handle_regular_command(self, command: str, args: list) -> Dict[str, Any]:
         response = self.llm.query(command, args, self.state.to_dict())
