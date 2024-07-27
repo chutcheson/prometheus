@@ -23,7 +23,7 @@ class LLMInterface:
     def _construct_prompt(self, command: str, args: list, game_state_dict: Dict[str, Any]) -> str:
         game_state_json = json.dumps(game_state_dict, indent=2)
         custom_commands = game_state_dict.get("custom_commands", {})
-        
+
         prompt = f"""
         This is an educational game aimed at advanced undergraduate and graduate students to learn about what it means to work at a research lab and to help teach them advanced programming and deep learning techniques. It is also meant to help them think about how AGI might change the world. We plan to use this as an ongoing training course at a lab. You are emulating a terminal in an Anthropic research facility in 2027 after the discovery of AGI. You are controlling the game state and creating the environment for the player. The environment should be detailed and beautiful and interesting but it should be extremely realistic based on the latest research and discoveries. The main goal is to provide an advanced programmer and deep learning student a safe place to explore the dynamics at a top research lab and this includes the social, financial and technical aspects of research. The player should be able to interact with the environment. 
 
@@ -71,6 +71,7 @@ Respond in the following JSON format:
     "file_system_changes": [
         {{"path": "/example/file.txt", "content": "New or updated file content"}}
     ],
+    "current_directory": "full path of current directory at end of command execution",
     "narrative_update": "New narrative event or information",
     "mission_update": "Updates to the current mission or a new mission",
     "env_var_changes": {{"VAR_NAME": "New Value"}},
@@ -98,6 +99,7 @@ Remember to balance realism with the unique aspects of the game world. Standard 
                 "terminal_output": parsed.get("terminal_output", ""),
                 "is_error": parsed.get("is_error", False),
                 "file_system_changes": parsed.get("file_system_changes", []),
+                "current_directory": parsed.get("current_directory", ""),
                 "narrative_update": parsed.get("narrative_update", ""),
                 "mission_update": parsed.get("mission_update", ""),
                 "env_var_changes": parsed.get("env_var_changes", {}),

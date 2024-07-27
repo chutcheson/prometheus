@@ -266,6 +266,8 @@ class FileSystem:
         return current if isinstance(current, str) else None
 
     def get_subtree(self, path: str, depth: int = 1) -> Dict[str, Any]:
+        return self.tree
+    """
         parts = path.strip("/").split("/")
         current = self.tree["/"]
         for part in parts:
@@ -281,6 +283,7 @@ class FileSystem:
                     for k, v in node.items()}
         
         return limit_depth(current, 0)
+    """
 
 class GameState:
     def __init__(self):
@@ -337,6 +340,7 @@ To begin your first task, type:
 Type 'help' for a list of available commands.\n\n"""
 
     def handle_command(self, user_input: str) -> Dict[str, Any]:
+        print(self.state.to_dict())
         if not user_input.strip():
             if not self.state.initial_message_shown:
                 initial_message = self._get_initial_message()
@@ -485,6 +489,8 @@ Type 'help' for a list of available commands.\n\n"""
     def _apply_updates(self, updates: Dict[str, Any]):
         for change in updates.get("file_system_changes", []):
             self.state.file_system.add_file(change["path"], change["content"])
+
+        self.state.current_directory = updates.get("current_directory", self.state.current_directory)
         
         if updates.get("narrative_update"):
             self.state.narrative_history.append(updates["narrative_update"])
