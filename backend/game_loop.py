@@ -318,16 +318,23 @@ class TerminalGame:
 
     def _get_initial_message(self) -> str:
         return """
-        Welcome to Anthropic AI Research Terminal v2.0.27
-        Copyright (c) 2027 Anthropic, Inc. All rights reserved.
+################################################################################
+#                                                                              #
+#             Welcome to Anthropic AI Research Terminal v2.0.27                #
+#                                                                              #
+################################################################################
 
-        NOTICE: This system is for authorized users only. All activities may be monitored and recorded.
+Copyright (c) 2027 Anthropic, Inc. All rights reserved.
 
-        To begin your first task, type:
-            msgrcv
+NOTICE: This system is for authorized users only. All activities may be 
+monitored and recorded.
 
-        Type 'help' for a list of available commands.
-        """
+Last login: Wed Jul 27 09:15:23 2027 from 192.168.1.100
+
+To begin your first task, type:
+  $ msgrcv
+
+Type 'help' for a list of available commands.\n\n"""
 
     def handle_command(self, user_input: str) -> Dict[str, Any]:
         if not user_input.strip():

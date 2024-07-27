@@ -5,6 +5,8 @@ const narrative = document.getElementById('narrative');
 const divider = document.getElementById('divider');
 const container = document.getElementById('container');
 
+let currentDirectory = '/';
+
 // Fetch and display initial message when the page loads
 window.addEventListener('load', async () => {
     try {
@@ -16,12 +18,15 @@ window.addEventListener('load', async () => {
         }
         
         if (data.terminal_output) {
-            appendToOutput(data.terminal_output + '\n');
+            appendToOutput(data.terminal_output);
         }
         
         if (data.current_directory) {
             updatePrompt(data.current_directory);
         }
+
+        // Move cursor to input after initial load
+        input.focus();
     } catch (error) {
         appendToOutput(`Error: ${error.message}\n`, 'error');
     }
@@ -36,7 +41,7 @@ input.addEventListener('keypress', function(event) {
 });
 
 async function executeCommand(command) {
-    appendToOutput(`$ ${command}\n`);
+    appendToOutput(`${getPromptString()}${command}\n`);
     
     try {
         const response = await fetch('/execute', {
@@ -61,8 +66,14 @@ async function executeCommand(command) {
             }
         }
         
-        // Always update the prompt with the current directory
-        updatePrompt(data.current_directory || '/');
+        if (data.current_directory) {
+            updatePrompt(data.current_directory);
+            currentDirectory = data.current_directory; // Update the currentDirectory variable
+        }
+
+        // Add command to history
+        commandHistory.unshift(command);
+        historyIndex = -1;
     } catch (error) {
         appendToOutput(`Error: ${error.message}\n`, 'error');
     }
@@ -82,7 +93,12 @@ function updateNarrative(text) {
 }
 
 function updatePrompt(directory) {
-    prompt.textContent = `${directory}$`;
+    currentDirectory = directory;
+    prompt.textContent = getPromptString();
+}
+
+function getPromptString() {
+    return `${currentDirectory}$ `;
 }
 
 function clearTerminal() {
@@ -117,4 +133,24 @@ document.addEventListener('mousemove', (e) => {
 
 document.addEventListener('mouseup', () => {
     isResizing = false;
+});
+
+// Command history functionality
+let commandHistory = [];
+let historyIndex = -1;
+
+input.addEventListener('keydown', function(event) {
+    if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (historyIndex < commandHistory.length - 1) {
+            historyIndex++;
+            input.value = commandHistory[historyIndex];
+        }
+    } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        if (historyIndex > -1) {
+            historyIndex--;
+            input.value = historyIndex >= 0 ? commandHistory[historyIndex] : '';
+        }
+    }
 });
