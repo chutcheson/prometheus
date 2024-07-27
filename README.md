@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Anthropic AI Research Terminal Simulator is an educational game designed for advanced undergraduate and graduate students to experience what it's like to work in a cutting-edge AI research lab. Set in a fictional Anthropic research facility in 2027, after the discovery of AGI, this simulator provides a safe and engaging environment for students to explore the social, financial, and technical aspects of AI research.
+The Anthropic AI Research Terminal Simulator is an educational game designed for students to experience what it's like to work in a cutting-edge AI research lab. Set in a fictional Anthropic research facility in 2027, after the discovery of AGI, this simulator provides a safe and engaging environment for students to explore the social, financial, and technical aspects of AI research.
 
 ## Features
 
