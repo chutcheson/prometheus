@@ -129,7 +129,7 @@ class TerminalGame:
         print(f"New mission received: {new_mission}")
 
     def _handle_regular_command(self, command: str, args: list):
-        response = self.llm.query(command, args, self.state)
+        response = self.llm.query(command, args, self.state.to_dict())
         print(response["output"])
         self._apply_updates(response)
 
