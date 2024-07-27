@@ -75,23 +75,19 @@ class TerminalGame:
         return [
         ]
 
-    def run(self):
-        print("Welcome to the Anthropic AI Research Terminal (2027 Edition). Type 'help' for available commands.")
-        while True:
-            user_input = input(f"{self.state.current_directory}$ ")
-            command, *args = user_input.split()
+    def handle_command(self, user_input: str) -> Dict[str, Any]:
+        command, *args = user_input.split()
 
-            if command == "exit":
-                print("Thank you for using the Anthropic AI Research Terminal. Goodbye!")
-                break
-            elif command == "msgrcv":
-                self._handle_msgrcv()
-            elif command == "msgsnd":
-                self._handle_msgsnd(args)
-            elif command == "help":
-                self._handle_help(args)
-            else:
-                self._handle_regular_command(command, args)
+        if command == "exit":
+            return {"terminal_output": "Thank you for using the Anthropic AI Research Terminal. Goodbye!"}
+        elif command == "msgrcv":
+            return self._handle_msgrcv()
+        elif command == "msgsnd":
+            return self._handle_msgsnd(args)
+        elif command == "help":
+            return self._handle_help(args)
+        else:
+            return self._handle_regular_command(command, args)
 
     def _handle_msgrcv(self):
         response = self.llm.query_json(self._construct_msgrcv_prompt())
@@ -128,15 +124,16 @@ class TerminalGame:
         print(f"**Narrative response**: An AI assistant materializes to provide guidance.")
         print(f"{self.state.current_directory}: {response['help_text']}")
 
-    def _handle_regular_command(self, command: str, args: list):
+    def _handle_regular_command(self, command: str, args: list) -> Dict[str, Any]:
         response = self.llm.query(command, args, self.state.to_dict())
         
-        if response.get("narrative_output"):
-            print(f"**Narrative response**: {response['narrative_output']}")
-        
-        print(f"{self.state.current_directory}: {response['terminal_output']}")
-        
         self._apply_updates(response)
+        
+        return {
+            "narrative_output": response.get("narrative_output"),
+            "terminal_output": response.get("terminal_output"),
+            "current_directory": self.state.current_directory
+        }
 
     def _apply_updates(self, updates: Dict[str, Any]):
         for change in updates.get("file_system_changes", []):
